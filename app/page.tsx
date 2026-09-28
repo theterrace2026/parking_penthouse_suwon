@@ -301,7 +301,22 @@ export default function ParkingStatus() {
 
       {isAdmin && (
         <section className="admin-request-panel">
-          <button disabled={busy} onClick={registerResident} style={{ marginBottom: 12 }}>
+          <button
+            disabled={busy}
+            onClick={registerResident}
+            style={{
+              display: 'block',
+              marginBottom: 16,
+              padding: '10px 16px',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
             + 입주 차량 등록
           </button>
           <h2>삭제 요청 ({requests.length}건)</h2>
