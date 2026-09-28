@@ -132,6 +132,70 @@ export default function ParkingStatus() {
     setRequests([])
   }
 
+  const registerResident = async () => {
+    const carNumber = prompt('차량번호를 입력하세요.')
+    if (!carNumber) return
+    const owner = prompt('호실을 입력하세요.')
+    if (!owner) return
+    const spot = prompt('비고를 입력하세요.', '') ?? ''
+
+    setBusy(true)
+    try {
+      const response = await fetch('/api/residents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carNumber, owner, spot })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      await fetchData()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '등록에 실패했습니다.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const editResident = async (car: Car) => {
+    const carNumber = prompt('차량번호를 입력하세요.', car.car_number)
+    if (!carNumber) return
+    const owner = prompt('호실을 입력하세요.', car.owner ?? '')
+    if (!owner) return
+    const spot = prompt('비고를 입력하세요.', car.spot ?? '') ?? ''
+
+    setBusy(true)
+    try {
+      const response = await fetch('/api/residents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: car.id, carNumber, owner, spot })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      await fetchData()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '수정에 실패했습니다.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const deleteResident = async (car: Car) => {
+    if (!confirm(`${car.car_number} 차량을 삭제하시겠습니까?`)) return
+
+    setBusy(true)
+    try {
+      const response = await fetch(`/api/residents?id=${car.id}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      await fetchData()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '삭제에 실패했습니다.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const reviewRequest = async (requestId: number, action: 'approve' | 'reject') => {
     const label = action === 'approve' ? '승인하여 차량을 삭제' : '반려'
     if (!confirm(`이 삭제 요청을 ${label}하시겠습니까?`)) return
@@ -200,6 +264,27 @@ export default function ParkingStatus() {
     </button>
   )
 
+  const renderResidentActions = (car: Car) => isAdmin ? (
+    <span style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+      <button
+        className="parking-delete-button"
+        disabled={busy}
+        onClick={() => editResident(car)}
+        style={{ padding: '6px 12px', fontSize: '14px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+      >
+        수정
+      </button>
+      <button
+        className="parking-delete-button"
+        disabled={busy}
+        onClick={() => deleteResident(car)}
+        style={{ padding: '6px 12px', fontSize: '14px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+      >
+        삭제
+      </button>
+    </span>
+  ) : renderRequestButton(car, 'resident')
+
   if (loading) return <div style={{ padding: 40 }}>로딩 중...</div>
 
   const sortedResidents = sortData(residents, residentSort.key, residentSort.order)
@@ -216,6 +301,9 @@ export default function ParkingStatus() {
 
       {isAdmin && (
         <section className="admin-request-panel">
+          <button disabled={busy} onClick={registerResident} style={{ marginBottom: 12 }}>
+            + 입주 차량 등록
+          </button>
           <h2>삭제 요청 ({requests.length}건)</h2>
           {requests.length === 0 ? (
             <p>대기 중인 삭제 요청이 없습니다.</p>
@@ -253,7 +341,7 @@ export default function ParkingStatus() {
               <td className="parking-car-number" style={thTdStyle}>{car.car_number}</td>
               <td className="parking-secondary-column" style={thTdStyle}>{car.owner}</td>
               <td className="parking-optional-column" style={thTdStyle}>{car.spot}</td>
-              <td className="parking-action-column" style={thTdStyle}>{renderRequestButton(car, 'resident')}</td>
+              <td className="parking-action-column" style={thTdStyle}>{renderResidentActions(car)}</td>
             </tr>
           ))}</tbody>
         </table>
